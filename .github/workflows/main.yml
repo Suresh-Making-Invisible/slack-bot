@@ -39,13 +39,23 @@ jobs:
       id: task-def
       run: |
         TASK_DEFINITION_ARN=$(aws ecs describe-services --cluster ${{ secrets.CLUSTER_NAME }} --services ${{ secrets.SERVICE_NAME }} --query 'services[0].taskDefinition' --output text)
-        TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_ARN --query 'taskDefinition')
-        echo "$TASK_DEFINITION" > task-def.json
+        aws ecs describe-task-definition --task-definition $TASK_DEFINITION_ARN --query 'taskDefinition' > task-def.json
 
-    - name: Update task definition with new image
+    - name: Extract and Update Task Definition
+      id: update-task-def
       run: |
+        # Extract necessary fields
+        TASK_FAMILY=$(jq -r '.family' task-def.json)
+        NETWORK_MODE=$(jq -r '.networkMode' task-def.json)
+        CONTAINER_DEFS=$(jq '.containerDefinitions' task-def.json)
+
+        # Create a new task definition JSON with the updated image
         IMAGE_URI=${{ secrets.ECR_REPOSITORY }}:latest
-        jq --arg IMAGE_URI "$IMAGE_URI" '.containerDefinitions[0].image = $IMAGE_URI' task-def.json > new-task-def.json
+        NEW_TASK_DEF_JSON=$(jq --arg IMAGE_URI "$IMAGE_URI" \
+          '.containerDefinitions[0].image = $IMAGE_URI | {family: .family, networkMode: .networkMode, containerDefinitions: .containerDefinitions, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}' \
+          task-def.json)
+
+        echo "$NEW_TASK_DEF_JSON" > new-task-def.json
 
     - name: Register new task definition
       id: register-task-def
