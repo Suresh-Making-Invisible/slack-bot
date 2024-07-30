@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  build_and_deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      with:
+        region: ${{ secrets.AWS_REGION }}
+        access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Build Docker image
+      run: docker build -t mynestjs15 --build-arg SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }} --build-arg SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }} .
+
+    - name: Tag Docker image
+      run: docker tag mynestjs15:latest ${{ secrets.ECR_REPOSITORY }}:latest
+
+    - name: Push Docker image to ECR
+      run: docker push ${{ secrets.ECR_REPOSITORY }}:latest
+
+    - name: Configure AWS CLI
+      run: |
+        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws configure set default.region ${{ secrets.AWS_REGION }}
+
+    - name: Update ECS service with new image
+      env:
+        CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+        SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+        IMAGE_URI: ${{ secrets.ECR_REPOSITORY }}:latest
+      run: |
+        aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --image $IMAGE_URI
