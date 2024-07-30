@@ -48,11 +48,13 @@ jobs:
         TASK_FAMILY=$(jq -r '.family' task-def.json)
         NETWORK_MODE=$(jq -r '.networkMode' task-def.json)
         CONTAINER_DEFS=$(jq '.containerDefinitions' task-def.json)
+        EXECUTION_ROLE_ARN=$(jq -r '.executionRoleArn' task-def.json)
 
-        # Create a new task definition JSON with the updated image
+        # Create a new task definition JSON with the updated image and execution role
         IMAGE_URI=${{ secrets.ECR_REPOSITORY }}:latest
         NEW_TASK_DEF_JSON=$(jq --arg IMAGE_URI "$IMAGE_URI" \
-          '.containerDefinitions[0].image = $IMAGE_URI | {family: .family, networkMode: .networkMode, containerDefinitions: .containerDefinitions, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}' \
+          --arg EXECUTION_ROLE_ARN "$EXECUTION_ROLE_ARN" \
+          '.containerDefinitions[0].image = $IMAGE_URI | {family: .family, networkMode: .networkMode, containerDefinitions: .containerDefinitions, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory, executionRoleArn: $EXECUTION_ROLE_ARN}' \
           task-def.json)
 
         echo "$NEW_TASK_DEF_JSON" > new-task-def.json
