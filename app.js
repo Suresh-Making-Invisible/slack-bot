@@ -29,6 +29,12 @@ app.event('hello', async ({ event, say, ack }) => {
   await say(`Hello again, <@${event.user}>!`);
 });
 
+app.event('hello-world', async ({ event, say, ack }) => {
+  // Acknowledge the event request
+  await ack();
+  console.log('Handling hello event:', JSON.stringify(event, null, 2));
+  await say(`Hello again, <@${event.user}>!`);
+});
 // Starts the Express server
 const PORT = process.env.PORT || 3000;
 expressReceiver.app.use(bodyParser.json());
