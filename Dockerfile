@@ -1,6 +1,15 @@
 # Use the official Node.js image as a base image
 FROM node:14
 
+
+# Accept build arguments
+ARG SLACK_BOT_TOKEN
+ARG SLACK_SIGNING_SECRET
+
+# Create .env file and write the environment variables
+RUN echo "SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}" > .env
+RUN echo "SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}" >> .env
+
 # Set the working directory
 WORKDIR /usr/src/app
 
