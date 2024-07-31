@@ -1,6 +1,8 @@
 # Use the official Node.js image as a base image
 FROM node:14
 
+# Set the working directory
+WORKDIR /usr/src/app
 
 # Accept build arguments
 ARG SLACK_BOT_TOKEN
@@ -10,8 +12,6 @@ ARG SLACK_SIGNING_SECRET
 RUN echo "SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}" > .env
 RUN echo "SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}" >> .env
 
-# Set the working directory
-WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
