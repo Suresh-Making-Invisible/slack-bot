@@ -29,7 +29,7 @@ app.event('hello', async ({ event, say, ack }) => {
   await say(`Hello again, <@${event.user}>!`);
 });
 
-app.event('hy', async ({ event, say, ack }) => {
+app.event('hyyy', async ({ event, say, ack }) => {
   // Acknowledge the event request
   await ack();
   console.log('Handling hello event:', JSON.stringify(event, null, 2));
